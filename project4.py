@@ -88,6 +88,7 @@ class NetNode():
         
         self._a = a
         self.error = error
+        self.class = None
         self.parents = []
         self.p_weights = []
         self.children = []
@@ -110,8 +111,9 @@ class NeuralNetwork():
         
         # each item in the list is the number of nodes in that layer,
         # so node_num_lst[0] is the # of nodes in the first layer, etc.
-        dummy = NetNode(1)
-        self.in_nodes = [dummy]
+        #dummy = NetNode(1)
+        #self.in_nodes = [dummy]
+        self.in_nodes = []
         for _ in range(node_num_lst[0]):
             self.in_nodes.append(NetNode())
                          
@@ -164,6 +166,8 @@ class NeuralNetwork():
                 node.set_a(logistic(in_j))
     
     def back_propagate(self, output_lst):
+        """ Back propagate error values through the network. """
+        
         for j in len(self.out_nodes):
             # must actually calculate in_j
             in_j = 0
@@ -173,10 +177,46 @@ class NeuralNetwork():
             curr_node.error = temp_value * (1 - temp_value) * (output_lst[j] - curr_node.get_a())
             
         # now do similar thing for mid-layer nodes
+        relevant_layers = self.other_nodes[:-1]
+        relevant_layers.append(self.in_nodes)
+        for layer in relevant_layers:
+            for i in range(len(layer)):
+                curr_node = layer[i]
+                g = logistic(in_j)
+                sum_thing = 0
+                for t in range(len(curr_node.children)):
+                    sum_thing += curr_node.c_weights[t] * curr_node.children[t].error
+                curr_node.error = g * (1 - g) * sum_thing
+                
+     def update_weights(self):
+        """ Update the weights based on the error values associated with each node. """
+        
+        # update parent weights
+        for layer in self.other_nodes:
+            for i in range(len(layer)):
+                curr_node = layer[i]
+                for t in range(len(curr_node.parents)):
+                    curr_node.p_weights[t] = curr_node.p_weights[t] + alpha * curr_node.parents[t].get_a() * curr_node.error
+                    
+        # update children weights
+        relevant_layers = self.other_nodes[:-1]
+        relevant_layers.append(self.in_nodes)
+        for layer in relevant_layers:
+            for i in range(len(layer)):
+                curr_node = layer[i]
+                for t in range(len(curr_node.children)):
+                    curr_node.c_weights[t] = curr_node.c_weights[t] + alpha * curr_node.get_a() * curr_node.children[t].error
+                    
+     def run_network(self, test_data, iters):
+        """ Run the network for the given number of iterations. """
+        
+        for _ in range(iters):
+            for (x, y) in test_data:
+                self.forward_propagate(x)
+                self.back_propagate(y)
+                self.update_weights()
+                              
     
-
-
-
 def main():
     header, data = read_data(sys.argv[1], ",")
 
@@ -193,6 +233,8 @@ def main():
     ### this is not mandatory and you could have something else below entirely.
     # nn = NeuralNetwork([3, 6, 3])
     # nn.back_propagation_learning(training)
+    nn = NeuralNetwork([3, 6, 3])
+    nn.run_network(training, 20)
 
 if __name__ == "__main__":
     main()
