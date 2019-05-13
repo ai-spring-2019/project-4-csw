@@ -1,0 +1,33 @@
+def read_data(filename, delimiter=",", has_header=True):
+    """Reads datafile using given delimiter. Returns a header and a list of
+    the rows of data."""
+    data = []
+    header = []
+    with open(filename) as f:
+        reader = csv.reader(f, delimiter=delimiter)
+        if has_header:
+            header = next(reader, None)
+        for line in reader:
+            example = [float(x) for x in line]
+            data.append(example)
+
+        return header, data
+
+def convert_data_to_pairs(data, header):
+    """Turns a data list of lists into a list of (attribute, target) pairs."""
+    pairs = []
+    for example in data:
+        x = []
+        y = []
+        for i, element in enumerate(example):
+            if header[i].startswith("target"):
+                y.append(element)
+            else:
+                x.append(element)
+        pair = (x, y)
+        pairs.append(pair)
+    return pairs
+
+header, data = read_data("wine.csv", "\t")
+pairs = convert_data_to_pairs(data, header)
+for (x, 
